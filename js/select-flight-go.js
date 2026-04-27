@@ -1,32 +1,43 @@
-// select-flight-go.js - Versión corregida y simplificada
+// =============================================
+// select-flight-go.js - VERSIÓN CORREGIDA FINAL
+// =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    fixFlightInfo();
-    updateDOM();
-    listFlights();
+    fixFlightData();
+    updateHeader();
+    renderFlights();
 });
 
-const fixFlightInfo = () => {
-    if (!info) info = { flightInfo: {} };
+function fixFlightData() {
+    if (!info) info = {};
     if (!info.flightInfo) info.flightInfo = {};
 
     const f = info.flightInfo;
-    if (!f.origin || typeof f.origin !== 'object') f.origin = { city: 'Bogotá', code: 'BOG', name: '' };
-    if (!f.destination || typeof f.destination !== 'object') f.destination = { city: 'Medellín', code: 'MDE', name: '' };
-    if (!f.flightDates) f.flightDates = [Date.now(), 0];
-    if (!f.adults) f.adults = 1;
-};
+    f.travel_type = f.travel_type || 1;
+    f.adults = f.adults || 1;
+    f.children = f.children || 0;
+    f.babies = f.babies || 0;
 
-const updateDOM = () => {
-    const f = info.flightInfo;
-    const originCode = document.querySelector('#label-origin-code');
-    const destCode = document.querySelector('#label-destination-code');
+    if (!f.origin || typeof f.origin !== 'object') {
+        f.origin = { city: "Bogotá", code: "BOG", name: "" };
+    }
+    if (!f.destination || typeof f.destination !== 'object') {
+        f.destination = { city: "Medellín", code: "MDE", name: "" };
+    }
+    if (!f.flightDates || !Array.isArray(f.flightDates)) {
+        f.flightDates = [Date.now(), 0];
+    }
+}
 
-    if (originCode) originCode.textContent = f.origin.code || 'BOG';
-    if (destCode) destCode.textContent = f.destination.code || 'MDE';
-};
+function updateHeader() {
+    const originLabel = document.querySelector('#label-origin-code');
+    const destLabel = document.querySelector('#label-destination-code');
 
-const listFlights = () => {
+    if (originLabel) originLabel.textContent = info.flightInfo.origin.code || 'BOG';
+    if (destLabel) destLabel.textContent = info.flightInfo.destination.code || 'MDE';
+}
+
+function renderFlights() {
     const container = document.getElementById('tickets-list');
     if (!container) return;
 
@@ -39,30 +50,31 @@ const listFlights = () => {
     ];
 
     sampleFlights.forEach((flight, index) => {
-        const div = document.createElement('div');
-        div.className = "border-blue-1 rounded-10 p-3 mt-2 cursor-pointer hover:bg-gray-100";
-        div.innerHTML = `
-            <div class="d-flex justify-space-between align-items-center">
+        const card = document.createElement('div');
+        card.className = "border-blue-1 rounded-10 p-3 mt-2 cursor-pointer";
+        card.style.border = "2px solid #00abc8";
+
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <p class="fw-bold">${info.flightInfo.origin.city} → ${info.flightInfo.destination.city}</p>
-                    <p class="fs-5">${flight.takeoff} - ${flight.landing}</p>
+                    <strong>${info.flightInfo.origin.city} → ${info.flightInfo.destination.city}</strong><br>
+                    <span>${flight.takeoff} - ${flight.landing}</span>
                 </div>
                 <div class="text-end">
-                    <p class="fw-bold fs-4">$${(PRECIO_BASE || 46900).toLocaleString('es-ES')} COP</p>
-                    <small class="tc-gray">Tarifa SMART</small>
+                    <strong class="fs-4">$${(PRECIO_BASE || 46900).toLocaleString('es-ES')}</strong><br>
+                    <small>Tarifa SMART</small>
                 </div>
             </div>
         `;
 
-        div.addEventListener('click', () => selectThisFlight(index));
-        container.appendChild(div);
+        card.addEventListener('click', () => selectFlight(index));
+        container.appendChild(card);
     });
-};
+}
 
-const selectThisFlight = (index) => {
+function selectFlight(index) {
     const f = info.flightInfo;
 
-    // Asignar datos del vuelo seleccionado
     f.origin.ticket_type = 'smart';
     f.origin.ticket_sched = { takeoff: '07:24', landing: '08:29' };
 
@@ -73,5 +85,5 @@ const selectThisFlight = (index) => {
 
     setTimeout(() => {
         window.location.href = 'select-flight-back.html';
-    }, 1200);
-};
+    }, 1000);
+}
