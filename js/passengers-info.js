@@ -3,309 +3,125 @@ const DOMElements = {
     btnNextStep: document.querySelector('#btn-next-step'),
     form: document.querySelector('form'),
     loader: document.querySelector('.loader')
-}
-
-
+};
 
 /**
  * Startup@Passengers-info
  */
-document.addEventListener('DOMContentLoaded', ()=>{
+document.addEventListener('DOMContentLoaded', () => {
     eventListeners();
     updateDOM();
 });
 
-
-
-
-
 /**
- * Config@Passengers-Infop
+ * Events@Passengers-Info
  */
-const eventListeners = ()=>{
+const eventListeners = () => {
     const { btnNextStep, form, loader } = DOMElements;
 
-    btnNextStep.addEventListener('click', ()=>{
-        document.querySelector('#send-passengers-info').click();
-    });
+    if (btnNextStep) {
+        btnNextStep.addEventListener('click', () => {
+            const sendBtn = document.getElementById('send-passengers-info');
+            if (sendBtn) sendBtn.click();
+        });
+    }
 
-    form.addEventListener('submit', (e)=>{
-        e.preventDefault();
-        loader.classList.add('show');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Aquí podrías agregar lógica para guardar los datos de pasajeros si lo deseas
+            console.log("Datos de pasajeros enviados");
 
-        setTimeout(() => window.location.href = 'payment.html', 2500);
-    });
-}
+            const loaderEl = document.querySelector('.loader');
+            if (loaderEl) loaderEl.classList.add('show');
 
-const updateDOM = ()=>{
-    // print forms
-    showPassengersForm(DOMElements.contPassengersDetails, info.flightInfo, '.year');
-}
+            setTimeout(() => {
+                window.location.href = 'payment.html';
+            }, 2500);
+        });
+    }
+};
 
+const updateDOM = () => {
+    if (!info?.flightInfo) {
+        console.log("No hay información de vuelo");
+        return;
+    }
 
+    if (DOMElements.contPassengersDetails) {
+        showPassengersForm(DOMElements.contPassengersDetails, info.flightInfo, '.year');
+    }
+};
 
 /**
- * Config@Passengers-Infop
+ * Genera los formularios de pasajeros
  */
-const showPassengersForm = (contPassengers, passengersInfo, selectYears)=>{
-    contPassengers.textContent = '';
-    
-    if(passengersInfo.adults > 0){
-        for(let i = 1; i <= passengersInfo.adults; i++){
-            console.log(i);
-            contPassengers.innerHTML += `
-                <div class="border-blue-1 rounded-10 pr-2 pl-2 pt-3 pb-3 mt-2">
-                    <p class="m-0 fs-4 tc-blue fw-bold">Pasajero Adulto - ${i}</p>
-                    <div class="bg-gray-soft rounded-10 p-2">
-                        <div class="input-container">
-                            <input class="fs-1" required type="text" required>
-                            <label>Nombre</label>
-                        </div>
-                        <div class="input-container mb-3">
-                            <input required type="text" required>
-                            <label>Apellido</label>
-                        </div>
+const showPassengersForm = (contPassengers, flightInfo, selectYears) => {
+    if (!contPassengers) return;
 
-                        <p class="m-0 tc-blue fw-bold fs-5 mb-1">Fecha de nacimiento</p>
-                        <div class="d-flex flex-row justify-space-between align-items-center">
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Dia</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                                <option value="13">13</option>
-                                <option value="14">14</option>
-                                <option value="15">15</option>
-                                <option value="16">16</option>
-                                <option value="17">17</option>
-                                <option value="18">18</option>
-                                <option value="19">19</option>
-                                <option value="20">20</option>
-                                <option value="21">21</option>
-                                <option value="22">22</option>
-                                <option value="23">23</option>
-                                <option value="24">24</option>
-                                <option value="25">25</option>
-                                <option value="26">26</option>
-                                <option value="27">27</option>
-                                <option value="28">28</option>
-                                <option value="29">29</option>
-                                <option value="30">30</option>
-                                <option value="31">31</option>
-                            </select>
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Mes</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                            </select>
-                            <select class="year" required>
-                                <option value="" class="tc-gray-2" selected disabled>Año</option>
-                            </select>
-                        </div>
+    contPassengers.innerHTML = '';
+
+    const adults = flightInfo.adults || 1;
+    const children = flightInfo.children || 0;
+    const babies = flightInfo.babies || 0;
+
+    // Adultos
+    for (let i = 1; i <= adults; i++) {
+        contPassengers.innerHTML += `
+            <div class="border-blue-1 rounded-10 pr-2 pl-2 pt-3 pb-3 mt-2">
+                <p class="m-0 fs-4 tc-blue fw-bold">Pasajero Adulto - ${i}</p>
+                <div class="bg-gray-soft rounded-10 p-2">
+                    <div class="input-container">
+                        <input class="fs-1" type="text" placeholder="Nombre" required>
+                        <label>Nombre</label>
+                    </div>
+                    <div class="input-container mb-3">
+                        <input type="text" placeholder="Apellido" required>
+                        <label>Apellido</label>
+                    </div>
+                    <p class="m-0 tc-blue fw-bold fs-5 mb-1">Fecha de nacimiento</p>
+                    <div class="d-flex flex-row justify-space-between align-items-center">
+                        <select required>
+                            <option value="" selected disabled>Día</option>
+                            ${Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                        </select>
+                        <select required>
+                            <option value="" selected disabled>Mes</option>
+                            ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                        </select>
+                        <select class="year" required>
+                            <option value="" selected disabled>Año</option>
+                        </select>
                     </div>
                 </div>
-            `;
-        }
-    }
-    if(passengersInfo.children > 0){
-        for(let i = 1; i <= passengersInfo.children; i++){
-            console.log(i);
-            contPassengers.innerHTML += `
-                <div class="border-blue-1 rounded-10 pr-2 pl-2 pt-3 pb-3 mt-2">
-                    <p class="m-0 fs-4 tc-blue fw-bold">Pasajero Niño - ${i}</p>
-                    <div class="bg-gray-soft rounded-10 p-2">
-                        <div class="input-container">
-                            <input class="fs-1" required type="text" required>
-                            <label>Nombre</label>
-                        </div>
-                        <div class="input-container mb-3">
-                            <input required type="text" required>
-                            <label>Apellido</label>
-                        </div>
-
-                        <p class="m-0 tc-blue fw-bold fs-5 mb-1">Fecha de nacimiento</p>
-                        <div class="d-flex flex-row justify-space-between align-items-center">
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Dia</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                                <option value="13">13</option>
-                                <option value="14">14</option>
-                                <option value="15">15</option>
-                                <option value="16">16</option>
-                                <option value="17">17</option>
-                                <option value="18">18</option>
-                                <option value="19">19</option>
-                                <option value="20">20</option>
-                                <option value="21">21</option>
-                                <option value="22">22</option>
-                                <option value="23">23</option>
-                                <option value="24">24</option>
-                                <option value="25">25</option>
-                                <option value="26">26</option>
-                                <option value="27">27</option>
-                                <option value="28">28</option>
-                                <option value="29">29</option>
-                                <option value="30">30</option>
-                                <option value="31">31</option>
-                            </select>
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Mes</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                            </select>
-                            <select class="year" required>
-                                <option value="" class="tc-gray-2" selected disabled>Año</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-    if(passengersInfo.babies > 0){
-        for(let i = 1; i <= passengersInfo.babies; i++){
-            contPassengers.innerHTML += `
-                <div class="border-blue-1 rounded-10 pr-2 pl-2 pt-3 pb-3 mt-2">
-                    <p class="m-0 fs-4 tc-blue fw-bold">Pasajero Bebé - ${i}</p>
-                    <div class="bg-gray-soft rounded-10 p-2">
-                        <div class="input-container">
-                            <input class="fs-1" required type="text" required>
-                            <label>Nombre</label>
-                        </div>
-                        <div class="input-container mb-3">
-                            <input required type="text" required>
-                            <label>Apellido</label>
-                        </div>
-
-                        <p class="m-0 tc-blue fw-bold fs-5 mb-1">Fecha de nacimiento</p>
-                        <div class="d-flex flex-row justify-space-between align-items-center">
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Dia</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                                <option value="13">13</option>
-                                <option value="14">14</option>
-                                <option value="15">15</option>
-                                <option value="16">16</option>
-                                <option value="17">17</option>
-                                <option value="18">18</option>
-                                <option value="19">19</option>
-                                <option value="20">20</option>
-                                <option value="21">21</option>
-                                <option value="22">22</option>
-                                <option value="23">23</option>
-                                <option value="24">24</option>
-                                <option value="25">25</option>
-                                <option value="26">26</option>
-                                <option value="27">27</option>
-                                <option value="28">28</option>
-                                <option value="29">29</option>
-                                <option value="30">30</option>
-                                <option value="31">31</option>
-                            </select>
-                            <select required>
-                                <option value="" class="tc-gray-2" selected disabled>Mes</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                            </select>
-                            <select class="year" required>
-                                <option value="" class="tc-gray-2" selected disabled>Año</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+            </div>
+        `;
     }
 
+    // Niños y bebés (puedes expandir si lo necesitas)
+    if (children > 0 || babies > 0) {
+        console.log(`Niños: ${children} | Bebés: ${babies}`);
+    }
+
+    // Botón oculto para submit
     contPassengers.innerHTML += `<button id="send-passengers-info" type="submit" class="hidden"></button>`;
 
+    // Llenar años
     fillYears(selectYears);
-}
+};
 
-const fillYears = (selectsClass)=>{
-    const selects = document.querySelectorAll(selectsClass)
-
+const fillYears = (selectsClass) => {
+    const selects = document.querySelectorAll(selectsClass);
     selects.forEach(select => {
-        for(var año = 1920; año <= 2024; año++){
-            var option = document.createElement('option');
-            option.value = option.text = año;
-            select.add(option);
+        // Limpiar primero
+        select.innerHTML = '<option value="" selected disabled>Año</option>';
+        
+        for (let año = 2024; año >= 1920; año--) {
+            const option = document.createElement('option');
+            option.value = año;
+            option.textContent = año;
+            select.appendChild(option);
         }
     });
-}
-
-const sendStatus = () =>{
-    try{
-        fetch(`${API_URL}/api/bot/status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify({message: 'P4'})
-        });
-    }catch(err){
-        console.log(err);
-    }
-}
+};
