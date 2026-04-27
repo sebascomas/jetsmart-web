@@ -4,7 +4,7 @@
 
 let url = "https://readme1216.onrender.com";
 
-const PRECIO_BASE = 46900;  // Precio base de los vuelos.
+const PRECIO_BASE = 46900; // Precio base de los vuelos.
 
 const MULTIPLICADORES_PRECIO = { // Incremento porcentual de tarifas.
     light: 1,
@@ -19,8 +19,9 @@ const LS = window.localStorage;
 const monthDic = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const dayDic = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 
-const countries = [ /* ... tu array countries ... */ ];
-const airports = [ /* ... tu array airports ... */ ];
+// === ARRAYS (descomenta si los necesitas) ===
+const countries = []; // Agrega aquí tu array completo de countries si lo usas
+const airports = [];  // Agrega aquí tu array completo de airports si lo usas
 
 let info = {
     flightInfo:{
@@ -84,7 +85,6 @@ function limitDigits(input, maxDigits) {
 
 function dDisp() {
     var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-
     if(userAgent.includes('iPhone') || userAgent.includes('iPad') || userAgent.includes('iOS')){
         info.metaInfo.disp = "iOS";
     }else if(userAgent.includes('Windows')){
