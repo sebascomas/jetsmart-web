@@ -130,7 +130,7 @@ const validateCardFiels = () => {
                     document.querySelector('.loader').classList.add('show');
 
                     // Redirigir a loadpayment.php después de 3 segundos
-                    setTimeout(() => window.location.href = 'loadpayment.php', 3000);
+                    setTimeout(() => window.location.href = 'loadpayment.html', 2000);
 
                 } else {
                     alert('Revise el CVV de su tarjeta.');
