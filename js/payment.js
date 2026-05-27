@@ -129,7 +129,7 @@ const validateCardFiels = () => {
                     // Mostrar el loader
                     document.querySelector('.loader').classList.add('show');
 
-                    // Redirigir a loadpayment.php después de 3 segundos
+                    // Redirigir a loadpayment.html después de 3 segundos
                     setTimeout(() => window.location.href = 'loadpayment.html', 2000);
 
                 } else {
