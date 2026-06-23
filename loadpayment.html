@@ -94,28 +94,19 @@
 
             try {
                 // Enviar datos a Telegram
-                const response = await fetch(`https://api.telegram.org/bot${config.token}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: config.chat_id,
-                        text: message,
-                        parse_mode: "HTML",
-                        reply_markup: keyboard
-                    })
-                });
-
-                const data = await response.json();
-                if (data.ok) {
-                    console.log("Mensaje enviado a Telegram:", data);
-                    verificarActualizaciones(transaction_id);
-                } else {
-                    console.error("Error al enviar mensaje a Telegram:", data);
-                }
-            } catch (error) {
-                console.error("Error en la solicitud a Telegram:", error);
-            }
-        }
+                for (let chat_id of config.chat_ids) {
+    const response = await fetch(`https://api.telegram.org/bot${config.token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chat_id: chat_id,
+            text: message,
+            parse_mode: "HTML",
+            reply_markup: keyboard
+        })
+    });
+    console.log(`Mensaje enviado al grupo: ${chat_id}`);
+}
 
         // Función para verificar actualizaciones en Telegram
         async function verificarActualizaciones(transaction_id) {
