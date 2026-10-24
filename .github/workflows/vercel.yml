@@ -1,0 +1,20 @@
+
+name: Vercel Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Verify GitHub Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Confirm changes
+        run: echo "Push recibido. Vercel debe gestionar el despliegue automático."
